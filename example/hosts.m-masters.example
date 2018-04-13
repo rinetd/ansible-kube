@@ -1,73 +1,77 @@
 # 部署节点：运行这份 ansible 脚本的节点
 [deploy]
-192.168.1.1
+10.114.0.13
 
-# etcd集群请提供如下NODE_NAME、NODE_IP变量,注意etcd集群必须是1,3,5,7...奇数个节点
+# etcd 集群请提供如下 NODE_NAME、NODE_IP 变量, 注意 etcd 集群必须是 1,3,5,7... 奇数个节点
 [etcd]
-192.168.1.1 NODE_NAME=etcd1 NODE_IP="192.168.1.1"
-192.168.1.2 NODE_NAME=etcd2 NODE_IP="192.168.1.2"
-192.168.1.3 NODE_NAME=etcd3 NODE_IP="192.168.1.3"
+10.114.0.12 NODE_NAME=etcd1 NODE_IP="10.114.0.12"
+10.114.0.13 NODE_NAME=etcd2 NODE_IP="10.114.0.13"
+10.114.0.19 NODE_NAME=etcd3 NODE_IP="10.114.0.19"
 
 [kube-master]
-192.168.1.1 NODE_IP="192.168.1.1"
-192.168.1.2 NODE_IP="192.168.1.2"
+10.114.0.12 NODE_IP="10.114.0.12"
+10.114.0.13 NODE_IP="10.114.0.13"
+10.114.0.19 NODE_IP="10.114.0.19"
+
+[kube-node]
+10.114.0.14 NODE_ID=node1 NODE_IP="10.114.0.14"
+10.114.0.15 NODE_ID=node2 NODE_IP="10.114.0.15"
+10.114.0.16 NODE_ID=node3 NODE_IP="10.114.0.16"
+10.114.0.17 NODE_ID=node4 NODE_IP="10.114.0.17"
+10.114.0.18 NODE_ID=node5 NODE_IP="10.114.0.18"
+
+# 预留组，后续添加 node 节点使用
+[new-node]
+#10.114.0.xx NODE_ID=node6 NODE_IP="10.114.0.xx"
+#10.114.0.xx NODE_ID=node7 NODE_IP="10.114.0.xx"
+
+# 如果启用 harbor，请配置后面 harbor 相关参数
+[harbor]
+#10.114.0.8 NODE_IP="10.114.0.8"
 
 # 负载均衡至少两个节点，安装 haproxy+keepalived
 [lb]
-192.168.1.1 LB_IF="eth0" LB_ROLE=backup  # 注意根据实际使用网卡设置 LB_IF变量
-192.168.1.2 LB_IF="eth0" LB_ROLE=master
+10.114.0.12 LB_IF="eth0" LB_ROLE=backup  # 注意根据实际使用网卡设置 LB_IF 变量
+10.114.0.13 LB_IF="eth0" LB_ROLE=backup  # 注意根据实际使用网卡设置 LB_IF 变量
+10.114.0.19 LB_IF="eth0" LB_ROLE=master
 [lb:vars]
-master1="192.168.1.1:6443"	# 根据实际master节点数量设置
-master2="192.168.1.2:6443"	# 需同步设置roles/lb/templates/haproxy.cfg.j2 
-#master3="192.168.1.x:6443"
-ROUTER_ID=57                    # 取值在0-255之间，区分多个instance的VRRP组播，同网段不能重复
-MASTER_PORT="8443"		# 设置 api-server VIP地址的服务端口
-
-[kube-node]
-192.168.1.2 NODE_ID=node1 NODE_IP="192.168.1.2"
-192.168.1.3 NODE_ID=node2 NODE_IP="192.168.1.3"
-192.168.1.4 NODE_ID=node3 NODE_IP="192.168.1.4"
-
-# 如果启用harbor，请配置后面harbor相关参数
-[harbor]
-#192.168.1.8 NODE_IP="192.168.1.8"
-
-# 预留组，后续添加node节点使用
-[new-node]
-#192.168.1.xx NODE_ID=node6 NODE_IP="192.168.1.xx"
-#192.168.1.xx NODE_ID=node7 NODE_IP="192.168.1.xx"
+master1="10.114.0.12:6443"	# 根据实际 master 节点数量设置
+master2="10.114.0.13:6443"	# 需同步设置 roles/lb/templates/haproxy.cfg.j2 
+master3="10.114.0.19:6443"
+ROUTER_ID=57                    # 取值在 0-255 之间，区分多个 instance 的 VRRP 组播，同网段不能重复
+MASTER_PORT="443"		# 设置 api-server VIP 地址的服务端口
 
 [all:vars]
-# ---------集群主要参数---------------
-#集群 MASTER IP，一般为VIP地址
-MASTER_IP="192.168.1.10"
-KUBE_APISERVER="https://192.168.1.10:8443"
+# --------- 集群主要参数 ---------------
+# 集群 MASTER IP，一般为 VIP 地址
+MASTER_IP="10.114.0.13"
+KUBE_APISERVER="https://10.114.0.13:8443"
 
 #TLS Bootstrapping 使用的 Token，使用 head -c 16 /dev/urandom | od -An -t x | tr -d ' ' 生成
 BOOTSTRAP_TOKEN="c30302226d4b810e08731702d3890f50"
 
-# 集群网络插件，目前支持calico和flannel
+# 集群网络插件，目前支持 calico 和 flannel
 CLUSTER_NETWORK="flannel"
 
-# 部分calico相关配置，更全配置可以去roles/calico/templates/calico.yaml.j2自定义
-# 设置 CALICO_IPV4POOL_IPIP=“off”,可以提高网络性能，条件限制详见 05.安装calico网络组件.md
+# 部分 calico 相关配置，更全配置可以去 roles/calico/templates/calico.yaml.j2 自定义
+# 设置 CALICO_IPV4POOL_IPIP=“off”, 可以提高网络性能，条件限制详见 05. 安装 calico 网络组件. md
 CALICO_IPV4POOL_IPIP="always"
-# 设置 calico-node使用的host IP，bgp邻居通过该地址建立，可手动指定端口"interface=eth0"或使用如下自动发现
+# 设置 calico-node 使用的 host IP，bgp 邻居通过该地址建立，可手动指定端口 "interface=eth0" 或使用如下自动发现
 IP_AUTODETECTION_METHOD="can-reach=223.5.5.5"
 
-# 部分flannel配置，详见roles/flannel/templates/kube-flannel.yaml.j2
+# 部分 flannel 配置，详见 roles/flannel/templates/kube-flannel.yaml.j2
 FLANNEL_BACKEND="vxlan"
 
 # 服务网段 (Service CIDR），部署前路由不可达，部署后集群内使用 IP:Port 可达
 SERVICE_CIDR="10.68.0.0/16"
 
-# POD 网段 (Cluster CIDR），部署前路由不可达，**部署后**路由可达
+# POD 网段 (Cluster CIDR），部署前路由不可达，** 部署后 ** 路由可达
 CLUSTER_CIDR="172.20.0.0/16"
 
 # 服务端口范围 (NodePort Range)
-NODE_PORT_RANGE="20000-40000"
+NODE_PORT_RANGE="30000-60000"
 
-# kubernetes 服务 IP (预分配，一般是 SERVICE_CIDR 中第一个IP)
+# kubernetes 服务 IP (预分配，一般是 SERVICE_CIDR 中第一个 IP)
 CLUSTER_KUBERNETES_SVC_IP="10.68.0.1"
 
 # 集群 DNS 服务 IP (从 SERVICE_CIDR 中预分配)
@@ -76,26 +80,26 @@ CLUSTER_DNS_SVC_IP="10.68.0.2"
 # 集群 DNS 域名
 CLUSTER_DNS_DOMAIN="cluster.local."
 
-# etcd 集群间通信的IP和端口, **根据实际 etcd 集群成员设置**
-ETCD_NODES="etcd1=https://192.168.1.1:2380,etcd2=https://192.168.1.2:2380,etcd3=https://192.168.1.3:2380"
+# etcd 集群间通信的 IP 和端口, ** 根据实际 etcd 集群成员设置 **
+ETCD_NODES="etcd1=https://10.114.0.12:2380,etcd2=https://10.114.0.13:2380,etcd3=https://10.114.0.19:2380"
 
-# etcd 集群服务地址列表, **根据实际 etcd 集群成员设置**
-ETCD_ENDPOINTS="https://192.168.1.1:2379,https://192.168.1.2:2379,https://192.168.1.3:2379"
+# etcd 集群服务地址列表, ** 根据实际 etcd 集群成员设置 **
+ETCD_ENDPOINTS="https://10.114.0.12:2379,https://10.114.0.13:2379,https://10.114.0.19:2379"
 
-# 集群basic auth 使用的用户名和密码
+# 集群 basic auth 使用的用户名和密码
 BASIC_AUTH_USER="admin"
-BASIC_AUTH_PASS="test1234"
+BASIC_AUTH_PASS="admin1234"
 
-# ---------附加参数--------------------
-#默认二进制文件目录
-bin_dir="/root/local/bin"
+# --------- 附加参数 --------------------
+# 默认二进制文件目录
+bin_dir="/usr/local/bin"
 
-#证书目录
+# 证书目录
 ca_dir="/etc/kubernetes/ssl"
 
-#部署目录，即 ansible 工作目录，建议不要修改
+# 部署目录，即 ansible 工作目录，建议不要修改
 base_dir="/etc/ansible"
 
-#私有仓库 harbor服务器 (域名或者IP)
-#HARBOR_IP="192.168.1.8"
+# 私有仓库 harbor 服务器 (域名或者 IP)
+#HARBOR_IP="10.114.0.8"
 #HARBOR_DOMAIN="harbor.yourdomain.com"
